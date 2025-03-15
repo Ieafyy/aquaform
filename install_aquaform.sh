@@ -55,4 +55,4 @@ echo -e "${BLUE}[INFO] Limpando builds anteriores...${NC}"
 rm -rf ./build ./dist *.spec
 echo -e "${GREEN}[SUCESSO] Limpando builds anteriores...${NC}"
 
-echo -e "${GREEN}[SUCESSO] Instalação do Aquaformmy concluída com sucesso!${NC}"
+echo -e "${GREEN}[SUCESSO] Instalação do Aquaform concluída com sucesso!${NC}"
