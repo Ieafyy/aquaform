@@ -14,7 +14,7 @@ import json
 import argparse
 import logging
 import yaml
-import mysql.connector
+import MySQLdb as mysql
 import colorama
 from typing import Dict, List, Any, Optional, Tuple
 from dataclasses import dataclass
@@ -169,11 +169,11 @@ class MySQLClient:
     def connect(self) -> bool:
         """Estabelece conexão com o banco de dados MySQL"""
         try:
-            self.connection = mysql.connector.connect(
+            self.connection = mysql.connect(
                 host=self.host,
                 user=self.user,
-                password=self.password,
-                database=self.database
+                passwd=self.password,
+                db=self.database
             )
             return True
         except Exception as e:
@@ -841,9 +841,9 @@ class Aquaformmy:
                 'users_table': {
                     'type': 'mysql_table',
                     'name': 'users',
-                    'host': '${MYSQL_HOST}',  # Usando variáveis de ambiente como exemplo
-                    'user': '${MYSQL_USER}',
-                    'password': '${MYSQL_PASSWORD}',
+                    'host': 'localhost',
+                    'user': 'root',
+                    'password': '1234',
                     'database': '${MYSQL_DATABASE}',
                     'columns': [
                         {
@@ -863,31 +863,95 @@ class Aquaformmy:
                             'default': None
                         },
                         {
-                            'name': 'password_hash',
-                            'type': 'CHAR(60)',  # Para bcrypt hash
+                            'name': 'cpf',
+                            'type': 'CHAR(11)',
                             'nullable': False
+                        },
+                        {
+                            'name': 'birth_date',
+                            'type': 'DATE',
+                            'nullable': False
+                        },
+                        {
+                            'name': 'account_balance',
+                            'type': 'DECIMAL(10,2)',
+                            'nullable': False,
+                            'default': '0.00'
+                        },
+                        {
+                            'name': 'is_active',
+                            'type': 'BOOLEAN',
+                            'nullable': False,
+                            'default': 'TRUE'
                         },
                         {
                             'name': 'created_at',
                             'type': 'TIMESTAMP',
                             'nullable': False,
                             'default': 'CURRENT_TIMESTAMP'
-                        },
-                        {
-                            'name': 'updated_at',
-                            'type': 'TIMESTAMP',
-                            'nullable': False,
-                            'default': 'CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'
                         }
                     ],
                     'primary_key': ['id']
                 },
-                'posts_table': {
+                'suppliers_table': {
                     'type': 'mysql_table',
-                    'name': 'posts',
-                    'host': '${MYSQL_HOST}',
-                    'user': '${MYSQL_USER}',
-                    'password': '${MYSQL_PASSWORD}',
+                    'name': 'suppliers',
+                    'host': 'localhost',
+                    'user': 'root',
+                    'password': '1234',
+                    'database': '${MYSQL_DATABASE}',
+                    'columns': [
+                        {
+                            'name': 'id',
+                            'type': 'INT AUTO_INCREMENT',
+                            'nullable': False
+                        },
+                        {
+                            'name': 'company_name',
+                            'type': 'VARCHAR(200)',
+                            'nullable': False
+                        },
+                        {
+                            'name': 'cnpj',
+                            'type': 'CHAR(14)',
+                            'nullable': False
+                        },
+                        {
+                            'name': 'contact_info',
+                            'type': 'JSON',
+                            'nullable': True
+                        },
+                        {
+                            'name': 'rating',
+                            'type': 'TINYINT',
+                            'nullable': False,
+                            'default': '3'
+                        },
+                        {
+                            'name': 'contract_start',
+                            'type': 'DATE',
+                            'nullable': False
+                        },
+                        {
+                            'name': 'contract_end',
+                            'type': 'DATE',
+                            'nullable': True
+                        },
+                        {
+                            'name': 'created_at',
+                            'type': 'TIMESTAMP',
+                            'nullable': False,
+                            'default': 'CURRENT_TIMESTAMP'
+                        }
+                    ],
+                    'primary_key': ['id']
+                },
+                'sellers_table': {
+                    'type': 'mysql_table',
+                    'name': 'sellers',
+                    'host': 'localhost',
+                    'user': 'root',
+                    'password': '1234',
                     'database': '${MYSQL_DATABASE}',
                     'columns': [
                         {
@@ -901,31 +965,33 @@ class Aquaformmy:
                             'nullable': False
                         },
                         {
-                            'name': 'title',
-                            'type': 'VARCHAR(200)',
+                            'name': 'store_name',
+                            'type': 'VARCHAR(150)',
                             'nullable': False
                         },
                         {
-                            'name': 'content',
-                            'type': 'TEXT',
-                            'nullable': True
-                        },
-                        {
-                            'name': 'status',
-                            'type': 'ENUM("draft", "published", "archived")',
+                            'name': 'seller_type',
+                            'type': 'ENUM("individual", "company")',
                             'nullable': False,
-                            'default': '"draft"'
+                            'default': '"individual"'
                         },
                         {
-                            'name': 'views_count',
-                            'type': 'INT UNSIGNED',
+                            'name': 'document',
+                            'type': 'VARCHAR(14)',
                             'nullable': False,
-                            'default': '0'
+                            'comment': 'CPF or CNPJ'
                         },
                         {
-                            'name': 'published_at',
-                            'type': 'DATETIME',
-                            'nullable': True
+                            'name': 'commission_rate',
+                            'type': 'DECIMAL(4,2)',
+                            'nullable': False,
+                            'default': '5.00'
+                        },
+                        {
+                            'name': 'total_sales',
+                            'type': 'DECIMAL(12,2)',
+                            'nullable': False,
+                            'default': '0.00'
                         },
                         {
                             'name': 'created_at',
@@ -940,17 +1006,17 @@ class Aquaformmy:
                             'columns': ['user_id'],
                             'reference_table': 'users',
                             'reference_columns': ['id'],
-                            'on_delete': 'CASCADE',
+                            'on_delete': 'RESTRICT',
                             'on_update': 'CASCADE'
                         }
                     ]
                 },
-                'tags_table': {
+                'products_table': {
                     'type': 'mysql_table',
-                    'name': 'tags',
-                    'host': '${MYSQL_HOST}',
-                    'user': '${MYSQL_USER}',
-                    'password': '${MYSQL_PASSWORD}',
+                    'name': 'products',
+                    'host': 'localhost',
+                    'user': 'root',
+                    'password': '1234',
                     'database': '${MYSQL_DATABASE}',
                     'columns': [
                         {
@@ -959,57 +1025,85 @@ class Aquaformmy:
                             'nullable': False
                         },
                         {
+                            'name': 'supplier_id',
+                            'type': 'INT',
+                            'nullable': False
+                        },
+                        {
+                            'name': 'seller_id',
+                            'type': 'INT',
+                            'nullable': False
+                        },
+                        {
+                            'name': 'sku',
+                            'type': 'VARCHAR(50)',
+                            'nullable': False
+                        },
+                        {
                             'name': 'name',
-                            'type': 'VARCHAR(50)',
+                            'type': 'VARCHAR(200)',
                             'nullable': False
                         },
                         {
-                            'name': 'slug',
-                            'type': 'VARCHAR(50)',
-                            'nullable': False
-                        }
-                    ],
-                    'primary_key': ['id']
-                },
-                'post_tags_table': {
-                    'type': 'mysql_table',
-                    'name': 'post_tags',
-                    'host': '${MYSQL_HOST}',
-                    'user': '${MYSQL_USER}',
-                    'password': '${MYSQL_PASSWORD}',
-                    'database': '${MYSQL_DATABASE}',
-                    'columns': [
+                            'name': 'description',
+                            'type': 'TEXT',
+                            'nullable': True
+                        },
                         {
-                            'name': 'post_id',
-                            'type': 'INT',
+                            'name': 'price',
+                            'type': 'DECIMAL(10,2)',
                             'nullable': False
                         },
                         {
-                            'name': 'tag_id',
-                            'type': 'INT',
-                            'nullable': False
+                            'name': 'stock_quantity',
+                            'type': 'INT UNSIGNED',
+                            'nullable': False,
+                            'default': '0'
+                        },
+                        {
+                            'name': 'min_stock',
+                            'type': 'INT UNSIGNED',
+                            'nullable': False,
+                            'default': '10'
+                        },
+                        {
+                            'name': 'status',
+                            'type': 'ENUM("active", "inactive", "out_of_stock")',
+                            'nullable': False,
+                            'default': '"active"'
+                        },
+                        {
+                            'name': 'last_restock_date',
+                            'type': 'DATETIME',
+                            'nullable': True
                         },
                         {
                             'name': 'created_at',
                             'type': 'TIMESTAMP',
                             'nullable': False,
                             'default': 'CURRENT_TIMESTAMP'
+                        },
+                        {
+                            'name': 'updated_at',
+                            'type': 'TIMESTAMP',
+                            'nullable': False,
+                            'default': 'CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'
                         }
                     ],
-                    'primary_key': ['post_id', 'tag_id'],
+                    'primary_key': ['id'],
                     'foreign_keys': [
                         {
-                            'columns': ['post_id'],
-                            'reference_table': 'posts',
+                            'columns': ['supplier_id'],
+                            'reference_table': 'suppliers',
                             'reference_columns': ['id'],
-                            'on_delete': 'CASCADE',
+                            'on_delete': 'RESTRICT',
                             'on_update': 'CASCADE'
                         },
                         {
-                            'columns': ['tag_id'],
-                            'reference_table': 'tags',
+                            'columns': ['seller_id'],
+                            'reference_table': 'sellers',
                             'reference_columns': ['id'],
-                            'on_delete': 'CASCADE',
+                            'on_delete': 'RESTRICT',
                             'on_update': 'CASCADE'
                         }
                     ]
@@ -1025,9 +1119,6 @@ class Aquaformmy:
             # Adicionar instruções de uso
             logger.info(f"\n{Fore.BLUE}[INFO] Instruções de uso:{Style.RESET_ALL}")
             logger.info("1. Configure as variáveis de ambiente necessárias:")
-            logger.info("   - MYSQL_HOST: endereço do servidor MySQL")
-            logger.info("   - MYSQL_USER: usuário do MySQL")
-            logger.info("   - MYSQL_PASSWORD: senha do usuário")
             logger.info("   - MYSQL_DATABASE: nome do banco de dados")
             logger.info("\n2. Personalize o arquivo gerado conforme necessário")
             logger.info("\n3. Execute os comandos do Aquaformmy:")
